@@ -1,0 +1,15 @@
+Beef	500 
+Beets	300
+Potatoes	300
+Cabbage	200 
+Carrots	100
+Onion	100
+Greens	50
+Tomato paste	15
+Vegetable_oil	15
+Vinegar	5
+Sour_cream	50
+Salt	2
+Black_pepper	2
+Water	2000
+Bay_leaves	2
