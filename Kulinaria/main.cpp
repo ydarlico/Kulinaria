@@ -316,6 +316,8 @@ int Find_allocation_of_the_BEST_recept_of_group(map <string, int> &Fridge, unord
 
 	//Heavy_lite_Ostatki(Fridge, Name_i_Recept, Fridge2, Bad_flag);
 };*/
+
+
 int weight_of_map(map <string, int> Schwere) {
 	int w = 0;
 	for (auto Recept = Schwere.begin(); Recept != Schwere.end(); ++Recept)
@@ -325,14 +327,14 @@ int weight_of_map(map <string, int> Schwere) {
 	return w;
 }
 
-map <string, int> Random_pack(map <string, int> Fridge, unordered_map <string, map<string, int>>&Name_i_Recept, map <string, int> Schwere, int &flagosi) {
+map <string, int> Random_pack(map <string, int> Fridge, unordered_map <string, map<string, int>>&Name_i_Recept, int &flagosi) {
 
 	//Рандомно собирает рюкзак, упор идет на скорость т.к перебрать длпустим сотню вариантов будет всеравно быстрее чем вычислять их же циклами выше
 	const int Size = Name_i_Recept.size();
 	int posit = 0;//random
 	int i = 0; //while
 	int count = 0; //alocation
-
+	map <string, int> Schwere;
 	map <string, int> BEST_Schwere;
 
 	auto Recept = Name_i_Recept.begin();
@@ -359,8 +361,21 @@ map <string, int> Random_pack(map <string, int> Fridge, unordered_map <string, m
 		}
 		i++;
 	}
-	Print_map(BEST_Schwere);
+	//Print_map(BEST_Schwere);
 	return BEST_Schwere;
+};
+
+
+
+void Recurse_way(map <string, int>&Fridge, unordered_map <string, map<string, int>>::iterator Name_i_Recept,int &flagosi) {
+	if (flagosi == 5) {
+		return;
+	}
+	else {
+
+
+
+	}
 };
 
 //В итоераторе сидит Name_i_Recept
@@ -857,7 +872,14 @@ int main()
 	vector <string> Allocation;
 	map <string, int> Schwere;
 
-	Random_pack(Fridge, Name_i_Recept, Schwere, flagosi);
+	Schwere = Random_pack(Fridge, Name_i_Recept, flagosi);
+	std::cout << "Fresh menu from Monte-Carlo" << endl; //вывод на экран всей карты 
+	for (auto i = Schwere.begin(); i != Schwere.end(); ++i)
+	{
+		std::cout << i->first << "   " << endl; //вывод на экран всей карты 
+	}
+
+
 	while (flagosi != 5 || shetcik!=Size) {
 		Find_allocation_of_the_BEST_recept_of_group(Fridge, Name_i_Recept, Allocation, flagosi);
 		shetcik++;
