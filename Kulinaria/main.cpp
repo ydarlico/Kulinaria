@@ -8,6 +8,8 @@
 #include <fstream>
 #include <sstream>
 #include <ctime>
+#include <time.h>
+#include<windows.h>
 using namespace std;
 
 map <string, int> Vlezaet (map <string, int> Fridge, map <string, int> Recept, int& Bad_flag)
@@ -120,7 +122,15 @@ void Print_vec(vector <string> Flags) {
 	{
 		std::cout << Flags[i] << "   "; //вывод на экран всей карты 
 	}
-	cout << " : " << endl;
+	cout << " ____END " << endl;
+};
+
+void Print_vec_p(vector <string> Flags) {
+	for (auto i = 0; i < size(Flags); ++i)
+	{
+		std::cout << Flags[i] << endl; //вывод на экран всей карты 
+	}
+	//cout << " ____END " << endl;
 };
 
 int Count_int_in_vec(vector <int> Flags,int d) {
@@ -339,9 +349,9 @@ map <string, int> Random_pack(map <string, int> Fridge, unordered_map <string, m
 
 	auto Recept = Name_i_Recept.begin();
 	map <string, int> Zapas(Fridge);
-
+	const int STOP_LINE = Size * 10;
 	srand(time(0)); // автоматическая рандомизация
-	while(i < 300) {
+	while(i < STOP_LINE) {
 		posit = rand() % Size; //от 0ю..6 т.е 7 штук
 		std::advance(Recept, posit); //Пододвинули указатель на нужный рецепт
 		Fridge = Vlezaet(Fridge, Recept->second, flagosi); //Испортили холодильник
@@ -367,16 +377,112 @@ map <string, int> Random_pack(map <string, int> Fridge, unordered_map <string, m
 
 
 
-void Recurse_way(map <string, int>&Fridge, unordered_map <string, map<string, int>>::iterator Name_i_Recept,int &flagosi) {
-	if (flagosi == 5) {
-		return;
+void Fill_Schwere(map <string, int> Fridge, unordered_map <string, map<string, int>> Name_i_Recept, map <string, int>& Schwere) {
+	map <string, int> Fridge2(Fridge);
+	int Flag = 0;
+	for (auto Recept = Name_i_Recept.begin(); Recept != Name_i_Recept.end(); ++Recept)
+	{
+		Fridge = Vlezaet(Fridge, Recept->second, Flag); //Испортили холоидльник
+		if (Flag == 5)
+			Schwere.emplace(Recept->first, -1);
+		else
+			Schwere.emplace(Recept->first, Bread_crumb(Recept->second));
+		Fridge = Fridge2; //починили холодильник
+	}
+	Print_map(Schwere);
+};
+// Заполнение списка рецептов причем в нее можно передавать НОВЫЙ холодильник ибо ее результатот всеравно будет изменение списка
+/*map <string, int> Beefsteak = {
+	{ "Beef", 500 },
+	{ "Vegetable_oil", 15 },
+	{ "Salt", 2 },
+	{ "Black_pepper", 2 },
+	};
+
+	map <string, int> Meatballs = {
+	{ "Beef", 500 },
+	{ "Vegetable_oil", 15 },
+	{ "Milk", 50 },
+	{ "Bread", 100 },
+	{ "Onion", 50 },
+	{ "Black_pepper", 2 },
+	};
+*/
+
+void find_best_of_pair(map <string, int> Recept, map <string, int> Recept2) { //Наиболее затратный из пары рецептов
+	int s = Recept.size();
+	int s2 = Recept2.size();
+
+	int rz = -1;
+	int count = 0;
+	if (s2 > s) {
+		rz = 2;
+		for (auto it = Recept2.begin(); it != Recept2.end(); ++it)
+		{
+			for (auto id = Recept.begin(); id != Recept.end(); ++id)
+			{
+				if (it->first == id->first) {
+					count++;//Считаем одинаковые ингридиенты типа коэф схожести рецептов
+					id->second = id->second - it->second; //От первого рецепта отнимаем второй
+				}
+			}
+		}
+		//Print_map(Recept);
 	}
 	else {
-
-
-
+		rz = 0;
+		for (auto it = Recept2.begin(); it != Recept2.end(); ++it)
+		{
+			for (auto id = Recept.begin(); id != Recept.end(); ++id)
+			{
+				if (it->first == id->first) {
+					count++;//Считаем одинаковые ингридиенты типа коэф схожести рецептов
+					it->second = it->second - id->second; //От первого рецепта отнимаем второй
+				}
+			}
+		}
+	//Print_map(Recept2);
 	}
+	cout << rz << "____RZ" << endl;
+	cout << count << "__count" << endl;
+	//find_best_of_pair(France_Omelet, Omelet);//0 нахдит фр омлет
+	return;
 };
+
+bool fint_rec(vector <string> Record, string wer) {
+	for (auto i = Record.begin(); i != Record.end(); ++i) {
+		if (*i == wer) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+//внести в глобалку:
+//int Record = -1;
+
+void Recurse_way(map <string, int> Fridge, unordered_map <string, map<string, int>> &Name_i_Recept,std::unordered_map <string, map<string,
+	int>>::const_iterator &Recept, vector <string>& Record, vector <string>& BEST_Record, int &Sum_record,int &BEST_Sum_record, int &flagosi) {
+	Sum_record = Bread_crumb(Recept->second);
+	for (auto i = Recept; i != Name_i_Recept.end(); ++i) //влезет ли любой из оставшихся
+	{
+		Fridge = Vlezaet(Fridge, i->second, flagosi);//Влез ли текущий элемент
+		if (fint_rec(Record, i->first)) continue;
+		if (flagosi != 5) { //наращиваем сумму элементов которые влезают 
+			Sum_record += Bread_crumb(i->second);
+			Record.push_back(i->first);
+			Recurse_way(Fridge, Name_i_Recept, Recept, Record, BEST_Record, Sum_record, BEST_Sum_record, flagosi); //Вызываем подфункции
+		}
+		if (flagosi == 5) {
+			if (Sum_record >= BEST_Sum_record) {
+				BEST_Record = Record;
+			}
+			return;
+		}
+	}
+	return;
+};
+//В итоераторе сидит Name_i_Recept
 
 //В итоераторе сидит Name_i_Recept
 
@@ -456,6 +562,19 @@ int main()
 	{ "Black_pepper", 2 },
 	{ "Water", 2000 } };
 
+	map <string, int> No_lite_soup = {
+	{ "Processed_cheese", 180 },
+	{ "Pasta", 100 },
+	{ "Potatoes", 300 },
+	{ "Cabbage", 200 },
+	{ "Carrots ", 100 },
+	{ "Onion", 100 },
+	{ "Greens", 50 },
+	{ "Carrots ", 100 },
+	{ "Salt", 2 },
+	{ "Black_pepper", 2 },
+	{ "Water", 2000 } };
+
 	map <string, int> Beefsteak = {
 	{ "Beef", 500 },
 	{ "Vegetable_oil", 15 },
@@ -468,6 +587,14 @@ int main()
 	{ "Vegetable_oil", 15 },
 	{ "Milk", 50 },
 	{ "Bread", 100 },
+	{ "Onion", 50 },
+	{ "Black_pepper", 2 },
+	};
+
+	map <string, int> Lazzania = {
+	{ "Beef", 200 },
+	{ "Vegetable_oil", 15 },
+	{ "Pasta", 100 },
 	{ "Onion", 50 },
 	{ "Black_pepper", 2 },
 	};
@@ -487,6 +614,20 @@ int main()
 	{ "Black_pepper", 2 },
 	};
 
+	map <string, int> Benedict_eggs = {
+	{ "Eggs", 200 },
+	{ "Salt", 2 },
+	{ "Water", 500 },
+	{ "Black_pepper", 2 },
+	};
+
+	map <string, int> MORE_Benedict_eggs = {
+		{ "Eggs", 200 },
+	{ "Salt", 2 },
+	{ "Water", 2500 },
+	{ "Black_pepper", 2 },
+	};
+
 	map <string, int> France_Omelet = {
 	{ "Eggs", 200 },
 	{ "Salt", 2 },
@@ -503,8 +644,12 @@ int main()
 
 	//добавление рецептов в MAP 
 	Name_i_Recept.emplace("Soup", Soup);
+	Name_i_Recept.emplace("No_lite_soup", No_lite_soup);
+	Name_i_Recept.emplace("Lazzania", Lazzania);
 	Name_i_Recept.emplace("Beefsteak", Beefsteak);
 	Name_i_Recept.emplace("Meatballs", Meatballs);
+	Name_i_Recept.emplace("Benedict_eggs", Benedict_eggs);
+	Name_i_Recept.emplace("MORE_Benedict_eggs", MORE_Benedict_eggs);
 	Name_i_Recept.emplace("Borsch", Borsch);
 	Name_i_Recept.emplace("Omelet", Omelet);
 	Name_i_Recept.emplace("France_Omelet", France_Omelet);
@@ -584,235 +729,39 @@ int main()
 	{ "Black_pepper", 200 },
 	{ "Water", 5000 },
 	{ "Bay_leaves", 20 } };
-
-	/*auto Pointer = Name_i_Recept.begin();
-	int Bad_flag = 5;
-	//Recurse(Fridge, Pointer, Bad_flag);
-	//vector <int> Schwere;
-	unordered_map <string, int> Schwere;
-	Schwere = Heavy_lite_Ostatki(Fridge, Name_i_Recept, Bad_flag); 
-	//Print_vec(Schwere);
-
-	Find_Best_Way(Fridge,Name_i_Recept, Schwere,Bad_flag);*/
-
-	//Heavy_lite_Ostatki(Fridge, Name_i_Recept, Fridge2, Bad_flag); //map
-	//Print_map(Fridge2);
-	//cout << Find_max(Fridge2);
-
-	/*int h = 0;
-	cout << "Dish_of_the_day" << Dish_of_the_day(Fridge, Soup, Soup) << endl;//2
-	cout << "Dish_of_the_day" << Dish_of_the_day(Fridge, Soup, Beefsteak) << endl;//2
-	cout << "Dish_of_the_day" << Dish_of_the_day(Fridge, Soup, Meatballs) << endl;//0
-	cout << "Dish_of_the_day" << Dish_of_the_day(Fridge, Soup, Borsch) << endl;//20
-	cout << "Dish_of_the_day" << Dish_of_the_day(Fridge, Soup, Risotto) << endl;//10
-	cout << "Dish_of_the_day" << Dish_of_the_day(Fridge, Soup, Omelet) << endl;//2*/
-
-	//int Flo = Dish_of_the_day(Fridge, Borsch, Omelet);
-	//cout << Flo;
-
-	/*int flag = 0;
-	std::cout << "VLEZAET_________ "<< '\n';
-	Fridge = Vlezaet(Fridge, Borsch, flag);
-
-	std::cout << "XOLODILNOK______" << '\n';
-	for (auto it = Fridge.begin(); it != Fridge.end(); ++it)
-	{
-		cout << it->first << " : " << it->second << endl; //вывод на экран всей ВВЕДЕНОЙ ТОЛЬКО ЧТО карты 
-	}
-	std::cout << "STOP_____XOLODILNOK______" << '\n';
-
-	flag = 0;
-	std::cout << "VLEZAET_________ " << '\n';
-	Fridge = Vlezaet(Fridge, Risotto, flag);
-	std::cout << "XOLODILNOK______" << '\n';
-	for (auto it = Fridge.begin(); it != Fridge.end(); ++it)
-	{
-		cout << it->first << " : " << it->second << endl; //вывод на экран всей ВВЕДЕНОЙ ТОЛЬКО ЧТО карты 
-	}
-	std::cout << "STOP_____XOLODILNOK______" << '\n';*/
-
-
-
-
-
-	//map <string, int> Rest_Fridge(Fridge); //Первоначальный холодильник Оставлю так на всякий случай, чтобы потом не побить 
-
-	//std::cout << "Count of Potatos in your Fridge => " << Fridge.find("Potatoes")->second << '\n'; //Проверка как обращаться
-
-	//алгоритм 
-
-	//vector <string> Good_formulas; //Рецепты которые ок Кажись нужно делать еще один map типа map<БОРЩ, map РЕЦЕПТ БОРЩА> Что бы выводить что конкретно можно приготовить
-
-	/*for (auto i = Name_i_Recept.begin(); i != Name_i_Recept.end(); ++i) //Проход по вектору
-	{
-		//Создать массив тут
-		for (auto it = i->second.begin(); it != i->second.end(); ++it) //Докопались до карты работаем с ней, в i хранится номер рецепта в котором мы сейчас сидим 
-		{
-
-			for (auto id = Fridge.begin(); id != Fridge.end(); ++id) 
-			{ // Открыли холодильник и смотрим внутрь
-				if (id->first == it->first) 
-				{
-					if (id->second < it->second)     //если 20 листье больше чем 2 листа то этот рецепт нам подходит  типа в холодосе больше чем нужно
-					{
-						//std::cout << "BAD ingredient  " << id->first << it->first << endl; //Сметанка не проканала т.к ее всего 10 грам а нужно 200 кажись
-						Ostatok = 0;
-						break; //Если хоть раз попался бэд ингредиент - рецепт идет далеко и надолго
-					}
-					else
-					{
-						//std::cout << "Good ingredient  " << id->first << it->first << endl; //Ингридиента хватает для рецепта id - холодос  it -рецепт
-						Ostatok += (id->second - it->second); //Закинули остаток, т.е что останется в холодосе после гипотетического приготовления 
-						//std::cout << "OSTATOK SEGOTO TAM _   " << id->first << " || " << Ostatok << endl;
-
-
-					}
-				}
-				//Добавить Если хоть раз попался бэд ингредиент - рецепт идет далеко и надолго
-				//Остальные на выдачу 
-
-				//Оптимизация - если в ХОРОШИХ рецептах отстается минимум свободного места типа было 500г мяса 
-				// можно бахнуть борщ и потратить 400/500 остаток 100 
-				//Или бахнуть ну не знаю яишенку и потратить 50/500 с состатком 450 вот это оптимизейшн 
-
-				//О, идея Записывать эти остатки в массив/суммировать в переменную и потом сделать просто сумму по всему массиву и где будет остаток меньше тот и ТОП рецепт 
-
-
-			} //Закрыли холодильник получив данные сравнения. но еще не успели открыть новый рецепт 
-			//cout << it->first << " : " << it->second << endl; //вывод на экран всей карты  типа название-количество
-		}
-		Good_formulas.emplace_back(Ostatok);
-		Ostatok = 0;
-		//std::cout << "END FORMULA____________________" << endl;
-	}
-
-	std::vector<int>::iterator min = std::min_element(Good_formulas.begin(), Good_formulas.end());
-	int iter = std::distance(Good_formulas.begin(), min); //Получили нулевое значение т.к борщ нам подходит
-	std::cout << "Min element " << *min << " on position " << iter << endl;
-
-	//std::cout << "The best formulas for you is " << Name_i_Recept[iter]->first << endl; //Не жрет эту связку вспомнить/загуглить как будет интернет как прибавить к итератору непонятно что iter интовое
-	int j = 1;
-
-	for (auto i = Name_i_Recept.begin(); j < iter; ++i) //Проход по вектору
-	{
-		if (j == iter) 
-		{
-		std::cout << "The best formulas for you is ___ " << i->first << endl;
-		std::cout << "Because this way have less count of rubbish than another" << endl;  
-		}
-		if (j > iter) break;
-		j++;
-	}
-	*/
-	//Допилить/перечитать код т.к он выдает неверные данные и иногда просто их теряет скорее всего косяк в конектинге основоного map и вектора 
-	/*const int Size = Name_i_Recept.size();
-	const int Size_k = Fridge.size();
-	cout << Size << "Size ==" << endl;
-
-	map <string, int> Rest_Fridge(Fridge); //Остаток в холодильнике// Полная копия холодоса 
-	vector <int> Flags (Size); //кол-во рецептов т.е размерности i будет массив флагов
-	vector <int> Allocation(Size); //Размещение 
-	
-	for (int j = 0; j < Size; j++)
-	{
-		Flags[j] = 0; 
-		Allocation[j] = -1;
-	}
-
-	int k,n,temp;
-
-	//Попытка завести хотя бы first-fit
-
-	for (auto i = Name_i_Recept.begin(); i != Name_i_Recept.end(); ++i) //Проход по вектору перебираем список рецептов а ниже разворачиваем сам рецепт типа это нназвание борщ, а ниже пошло "морковка свекла мясо итд..."
-	{
-		n = 0;//ячейка ингридиента
-		for (auto it = i->second.begin(); it != i->second.end(); ++it) //Докопались до карты работаем с ней, в i хранится номер рецепта в котором мы сейчас сидим т.е первый борщ потом суп потом еще что-то
-		{
-			k = 0;
-			for (auto id = Fridge.begin(); id != Fridge.end(); ++id)
-			{ // Открыли холодильник и смотрим внутрь
-			  std::cout << "__NOW_ingredient  " << id->first << it->first << endl; //Ингридиента хватает для рецепта id - холодос  it -рецепт
-				if (id->first == it->first) //Сравниваем одинаковые элементы иил нет
-				{
-					std::cout << "__NOW_GOOOD_ingredient  " << id->first << it->first << endl; //Ингридиента хватает для рецепта id - холодос  it -рецепт
-					if ((Flags[n] == 0) &&(id->second >= it->second))     //если нам хватает места и РЕЦЕПТ еще не был обработан т.е ему не нашли место 
-					{
-						Allocation[n] = k; //созранили номер размещения
-						Flags[n] = 1;      // сказали что этот рецепт уже на полке
-						cout << "SHA BUDET BREAK" << "   " << endl;
-						break;             // вышли нахренЮ, ничего не сделали холодосу
-
-					}
-					
-				}
-			k++; if (k == Size) break;
-			cout << "===k=      " <<k << "=k     " << endl;
-			}
-			n++; if (n == Size) break;
-			cout << "=====n      " << n << "=====n      " << endl;
-		}//Закрыли рецепт но еще не открыли новый, i хранится номер рецепта в котором мы сейчас сидим т.е первый борщ потом суп потом еще что-то, на первой итерации в тут хранится "борщ-"борщ
-
-	}*/
-
-	/*cout << "Flags[j]" << "   " << endl;
-
-	for (int j = 0; j < Size; j++)
-	{
-		cout << Flags[j] << "   " <<endl;
-	}
-
-	cout << "Allocation[j]" << "   " << endl;
-
-	for (int j = 0; j < Size; j++)
-	{
-		cout << Allocation[j] << "   " << endl;
-	}*/
-
-
-	/*std::cout << "OSTATKI____ " << endl;
-	for (auto id = Fridge.begin(); id != Fridge.end(); ++id)
-	{
-		std::cout << id->first << " : " << id->second << endl; //вывод на экран всей карты 
-	}
-
-	std::cout << "What we hawe in end" << endl;
-	for (auto i = 0; i<Good_formulas.size(); ++i)
-	{
-		std::cout << Good_formulas[i] <<"   "<< endl; //вывод на экран всей карты 
-	}*/
-
-
-
-
-
-	/*map <string, int> Rest_Fridge(Fridge); //Первоначальный холодильник Оставлю так на всякий случай, чтобы потом не побить 
+	double start_FF = GetTickCount();
+	map <string, int> Rest_Fridge(Fridge); //Первоначальный холодильник Оставлю так на всякий случай, чтобы потом не побить 
 	const int Size = Name_i_Recept.size();
 	int counto = 0;
 	int flag = 0;
 	vector <int> Flags(Size);
-	vector <string> Allocation(Size);*/
+	vector <string> Allocation2(Size);
 
 	//Что-то вырисовывается 
 	//FIRST FIT
 	//_____________________________________________________
-	/*for (auto Recept = Name_i_Recept.begin(); Recept != Name_i_Recept.end(); ++Recept) //Проход по вектору перебираем список рецептов а ниже разворачиваем сам рецепт типа это нназвание борщ, а ниже пошло "морковка свекла мясо итд..." в данном случае и i j это map
+	for (auto Recept = Name_i_Recept.begin(); Recept != Name_i_Recept.end(); ++Recept) //Проход по вектору перебираем список рецептов а ниже разворачиваем сам рецепт типа это нназвание борщ, а ниже пошло "морковка свекла мясо итд..." в данном случае и i j это map
 	{
-		Allocation[counto] = Recept->first;
+		Allocation2[counto] = Recept->first;
 		Fridge = Vlezaet(Fridge, Recept->second, flag);
 		Flags[counto] = flag;//тому который только что пришел
 		//std::cout << Recept->first << "   ___" << endl;
 		counto++;
 	}
 
-	std::cout << "Your menu for today" << endl; //вывод на экран всей карты 
+	/*std::cout << "Your menu for today" << endl; //вывод на экран всей карты 
 	for (auto i = 0; i<Size; ++i)
 	{
 		if (Flags[i] == 0)
-			std::cout << Allocation[i] << "   " << endl; //вывод на экран всей карты 
-	}*/
+			std::cout << Allocation2[i] << "   " << endl; //вывод на экран всей карты 
+	}
+	std::cout << endl;*/
 
-
-
+	double finish_FF = GetTickCount();
+	std::cout << "The main execution time of the FF algorithm " << endl;
+	std::cout << "   " << finish_FF - start_FF << "  seconds " << endl;
+	
+	//std::cout << "Best fitness menu for you" << endl; //вывод на экран всей карты 
 
 	//_____________________________________________________
 	//BEST FIT?????????????????????????????
@@ -826,7 +775,7 @@ int main()
 	//vector <int> Flags(Size);
 	//FILL_vec(Flags,3);
 	//vector <string> Allocation(Size);
-
+    // std::cout << "Risotto" << endl;
 	//int Flo = Dish_of_the_day(Fridge, Borsch, Omelet);
 	//cout << Flo;
 	//auto Pointer = Name_i_Recept.begin();
@@ -835,21 +784,21 @@ int main()
 
 	//All_Zero_in_line(Fridge, Pointer, Name_i_Recept);
 
-	/*
+	//double start_BF = GetTickCount();
 	auto RECEPT_Pointer = --(Name_i_Recept.end());
-	const int Size = Name_i_Recept.size();
-	vector <int> Flags(Size);
+	//const int Size = Name_i_Recept.size();
+	//vector <int> Flags(Size);
 	FILL_vec(Flags,-1);
 	vector <string> Allocation;
-	int counto = 0;
+	counto = 0;
 	int point = -1;
-	for (auto Recept = Name_i_Recept.begin(); Recept != RECEPT_Pointer; ++Recept)
+	/*for (auto Recept = Name_i_Recept.begin(); Recept != RECEPT_Pointer; ++Recept)
 	{
 		point = All_Zero_in_line(Fridge, Recept, Name_i_Recept);
 		cout << "All_Zero_in_line_____"<< All_Zero_in_line(Fridge, Recept, Name_i_Recept)<<endl; //Вернет числа кол-во нулей т.е приоритет рецепта находящегося сейчас в рецепт
 		Flags[counto] = point;
 		counto++;
-		/*if (All_Zero_in_line(Fridge, Recept, Name_i_Recept)) //Если выкинуло тру то
+		if (All_Zero_in_line(Fridge, Recept, Name_i_Recept)) //Если выкинуло тру то
 		{
 			Fridge = Vlezaet(Fridge, Recept->second, flag);
 			cout << flag << "FLAG" << endl;
@@ -857,33 +806,70 @@ int main()
 			cout << Allocation[counto];
 		}
 		cout << counto << "__counto" << endl;
-		counto++;*/
-	/*}
+		counto++;
+	}
 	Print_vec(Flags);
 	int num = Max_element_numer(Flags); //вернет 1
-	auto Recept = Name_i_Recept.begin();
-	std::advance(Recept, num);
-	Allocation.push_back(Recept->first);
-	Name_i_Recept.erase(Recept->first);*/
+	auto Recept2 = Name_i_Recept.begin();
+	std::advance(Recept2, num);
+	Allocation.push_back(Recept2->first);
+	Name_i_Recept.erase(Recept2->first);*/
 
+
+	//double finish_BF = GetTickCount();
+	//std::cout << "The main execution time of the BF algorithm " << endl;
+	//std::cout << "   " << finish_BF - start_BF << "  seconds " << endl;
+	
+	//delete Recept;
+
+	
+	//Recurse_way
+	double start_RV = GetTickCount()-19;
 	int flagosi = -1;
 	int shetcik = 0;
-	const int Size = Name_i_Recept.size();
-	vector <string> Allocation;
+	//const int Size = Name_i_Recept.size();
+	Allocation.clear();
 	map <string, int> Schwere;
+	vector <string> Record;
+	vector <string> BEST_Record;
+	int BEST_Sum_record = 0;
+	int Sum_record = 0;
+	std::unordered_map <string, map<string, int>>::const_iterator Recept = Name_i_Recept.begin();
+	//Fill_Schwere(Fridge, Name_i_Recept, Schwere); Заполнение списка рецептов причем в нее можно передавать НОВЫЙ холодильник ибо ее результатот всеравно будет изменение списка
+	Recurse_way(Fridge, Name_i_Recept, Recept, Record, BEST_Record, Sum_record, BEST_Sum_record, flagosi);
+	//Print_vec_p(BEST_Record);
+
+	double finish_RV = GetTickCount();
+
+	std::cout << "The main execution time of the RV algorithm " << endl;
+	std::cout << "   " << finish_RV - start_RV << "  seconds " << endl;
+
+	//MC
+	double start_MC = GetTickCount();
 
 	Schwere = Random_pack(Fridge, Name_i_Recept, flagosi);
-	std::cout << "Fresh menu from Monte-Carlo" << endl; //вывод на экран всей карты 
-	for (auto i = Schwere.begin(); i != Schwere.end(); ++i)
+	//std::cout << "Fresh menu from Monte-Carlo" << endl; //вывод на экран всей карты 
+	/*for (auto i = Schwere.begin(); i != Schwere.end(); ++i)
 	{
 		std::cout << i->first << "   " << endl; //вывод на экран всей карты 
-	}
+	}*/
+	double finish_MC = GetTickCount();
 
+	std::cout << "The main execution time of the MC algorithm " << endl;
+	std::cout << "   " << finish_MC - start_MC << "  seconds " << endl;
 
+	//BD
+	double start_BF = GetTickCount();
 	while (flagosi != 5 || shetcik!=Size) {
 		Find_allocation_of_the_BEST_recept_of_group(Fridge, Name_i_Recept, Allocation, flagosi);
 		shetcik++;
 	}
+
+	double finish_BF = GetTickCount();
+	std::cout << "The main execution time of the BF algorithm " << endl;
+	std::cout << "   " << finish_BF - start_BF << "  seconds " << endl;
+
+
 
 	//Последние два по ссылке т.к удаляем рецепт который уже использовали и добавляем его в алокэйшн
 
@@ -936,13 +922,13 @@ int main()
 	}*/
 
 
-
-	std::reverse(Allocation.begin(), Allocation.end());
+	/*std::reverse(Allocation.begin(), Allocation.end());
 	std::cout <<"Your menu for today" << endl; //вывод на экран всей карты 
 	for (auto i = 0; i<Allocation.size(); ++i)
 	{
 		std::cout << Allocation[i] << "   " << endl; //вывод на экран всей карты 
-	}
+	}*/
+	
 
 	//Метод ветвей и границ те оптимальный перебор
 	//Цель найти ГДЕ МЕНЬШЕ ОСТАТОК ЭТОГО рецепта 
